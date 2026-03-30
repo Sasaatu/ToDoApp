@@ -171,7 +171,9 @@ app.delete('/todos/:id', async (req, res) => {
 // =====================
 // サーバー起動
 // =====================
-// ポート3000でサーバーを起動する
-app.listen(3000, () => {
-  console.log('Server running on http://localhost:3000');
+// ポートを選択してサーバーを起動する
+const PORT = process.env.PORT||3000;
+
+app.listen(PORT, () => {
+  console.log(`Server running on ${PORT}`);
 });
