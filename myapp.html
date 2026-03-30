@@ -27,12 +27,15 @@
   </div>
 
   <script>
+    //const API_URL = 'http://localhost:3000';
+    const API_URL = 'https://todoapp-ozuz.onrender.com';
+
     // ログイン
     async function login() {
       const email = document.getElementById('email').value;
       const password = document.getElementById('password').value;
 
-      const res = await fetch('http://localhost:3000/login', {
+      const res = await fetch(`${API_URL}/login`, {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({ email, password })
@@ -64,7 +67,7 @@
     // todo一覧取得
     async function getTodos() {
       const userId = getUserId();
-      const res = await fetch(`http://localhost:3000/todos?userId=${userId}`);
+      const res = await fetch(`${API_URL}/todos?userId=${userId}`);
       const todos = await res.json();
 
        list = document.getElementById('list');
@@ -89,7 +92,7 @@
       const userId = getUserId();
       const title = document.getElementById('title').value;
 
-      await fetch('http://localhost:3000/todos', {
+      await fetch(`${API_URL}/todos`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId, title })
@@ -103,7 +106,7 @@
 
     // todo削除
     async function deleteTodo(id) {
-      await fetch(`http://localhost:3000/todos/${id}`, {
+      await fetch(`${API_URL}/todos/${id}`, {
         method: 'DELETE'
       });
 
@@ -119,8 +122,6 @@
     // 初期表示（ログイン済みチェック
     window.onload = () => {
       shiftLogin();
-      // document.getElementById('loginArea').style.display = 'block';
-      // document.getElementById('todoArea').style.display = 'none';
     };
   </script>
 
