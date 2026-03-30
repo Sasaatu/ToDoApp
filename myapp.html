@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Todo App</title>
+</head>
+<body>
+
+  <h1>Todo App</h1>
+
+  <!-- ログイン画面 -->
+  <div id="loginArea">
+    <h2>Login</h2>
+    <input id="email" placeholder="email">
+    <input id="password" placeholder="password">
+    <button onclick="login()">ログイン</button>
+  </div>
+
+  <!-- TODO画面 -->
+  <div id="todoArea" style="display:none;">
+    <h2>Todo</h2>
+
+    <input id="title" placeholder="todo入力">
+    <button onclick="addTodo()">追加</button>
+    <br> <button onclick="shiftLogin()">ログイン画面に戻る</button>
+
+    <ul id="list"></ul>
+  </div>
+
+  <script>
+    // ログイン
+    async function login() {
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+
+      const res = await fetch('http://localhost:3000/login', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ email, password })
+      });
+
+      const data = await res.json();
+
+      // Check if userID is valid
+      if (!data.userId) {
+        console.error('No User ID returned!');
+        return false;
+      }
+
+      // userId保存
+      localStorage.setItem('userId', data.userId);
+
+      // 画面切り替え
+      document.getElementById('loginArea').style.display = 'none';
+      document.getElementById('todoArea').style.display = 'block';
+
+      getTodos();
+    }
+
+    // userID取得
+    function getUserId() {
+      return localStorage.getItem('userId');
+    }         
+
+    // todo一覧取得
+    async function getTodos() {
+      const userId = getUserId();
+      const res = await fetch(`http://localhost:3000/todos?userId=${userId}`);
+      const todos = await res.json();
+
+       list = document.getElementById('list');
+      list.innerHTML = '';
+
+      todos.forEach(todo => {
+        const li = document.createElement('li');
+        li.textContent = todo.title;
+
+        // 削除ボタン
+        const delBtn = document.createElement('button');
+        delBtn.textContent = '削除';
+        delBtn.onclick = () => deleteTodo(todo.id);
+
+        li.appendChild(delBtn);
+        list.appendChild(li);
+      });
+    }
+
+    // todo追加
+    async function addTodo() {
+      const userId = getUserId();
+      const title = document.getElementById('title').value;
+
+      await fetch('http://localhost:3000/todos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, title })
+      });
+
+      // empty todo input
+      document.getElementById('title').value = '';
+
+      getTodos();
+    }
+
+    // todo削除
+    async function deleteTodo(id) {
+      await fetch(`http://localhost:3000/todos/${id}`, {
+        method: 'DELETE'
+      });
+
+      getTodos();
+    }
+
+    // login画面に戻る
+    function shiftLogin() {
+      document.getElementById('loginArea').style.display = 'block';
+      document.getElementById('todoArea').style.display = 'none';
+    }   
+
+    // 初期表示（ログイン済みチェック
+    window.onload = () => {
+      shiftLogin();
+      // document.getElementById('loginArea').style.display = 'block';
+      // document.getElementById('todoArea').style.display = 'none';
+    };
+  </script>
+
+</body>
+</html>
