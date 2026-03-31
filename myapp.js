@@ -14,16 +14,34 @@ app.use(cors());
 // JSON形式のデータを受け取れるようにする（超重要）
 app.use(express.json());
 
+// Added for file paths
+const path = require('path'); 
+
 
 // =====================
 // DB接続設定
 // =====================
-const pool = new Pool({
+/*const pool = new Pool({
   user: 'sasaatu',      // DBのユーザー名
   host: 'localhost',    // DBの場所（自分のPC）
   database: 'myapp',    // 使うデータベース名
   password: '93618frc', // パスワード
   port: 5432,           // PostgreSQLのポート
+});*/
+const pool = new Pool({
+  // Use connectionString for Render's Internal Database URL
+  connectionString: process.env.DATABASE_URL,
+  ssl: {
+    rejectUnauthorized: false // Required for most cloud providers
+  }
+});
+
+// =====================
+// Serve Frontend
+// =====================
+// This tells Express to send your HTML file when someone visits the URL
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'myapp.html'));
 });
 
 // =====================

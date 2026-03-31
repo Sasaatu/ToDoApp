@@ -1,0 +1,13 @@
+{
+  "name": "todo-app",
+  "version": "1.0.0",
+  "main": "myapp.js",
+  "scripts": {
+    "start": "node myapp.js"
+  },
+  "dependencies": {
+    "express": "^4.22.1",
+    "pg": "^8.20.0",
+    "cors": "^2.8.6"
+  }
+}
