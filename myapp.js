@@ -1,45 +1,49 @@
-// expressというライブラリを読み込む（Webサーバー作るため）
+// ライブラリのインポート
+// Webサーバー作る
 const express = require('express');
-
-// PostgreSQLに接続するためのライブラリ
+// PostgreSQLに接続する
 const { Pool } = require('pg');
+// ブラウザからサーバーにアクセスする
+const cors = require('cors');
+// パス機能
+const path = require('path');
+// パスワード暗号化
+const bcrypt = require('bcrypt');
+
+// デバッグモード: local or deploy
+const mode = 'local';
+// 暗号化の強さ
+const saltRounds = 10;
 
 // expressアプリを作る（これがサーバー本体）
 const app = express();
 
-// ブラウザからサーバーにアクセスできるようにする設定
-const cors = require('cors');
 app.use(cors()); 
 
 // JSON形式のデータを受け取れるようにする（超重要）
 app.use(express.json());
 
-// Added for file paths
-const path = require('path'); 
-
-
 // =====================
 // DB接続設定
 // =====================
-/*const pool = new Pool({
-  user: 'sasaatu',      // DBのユーザー名
-  host: 'localhost',    // DBの場所（自分のPC）
-  database: 'myapp',    // 使うデータベース名
-  password: '93618frc', // パスワード
-  port: 5432,           // PostgreSQLのポート
-});*/
-const pool = new Pool({
-  // Use connectionString for Render's Internal Database URL
-  connectionString: process.env.DATABASE_URL,
-  ssl: {
-    rejectUnauthorized: false // Required for most cloud providers
-  }
-});
+const poolConfig = (mode === 'local') 
+  ? {
+      user: 'sasaatu',
+      host: 'localhost',
+      database: 'myapp',
+      password: '93618frc',
+      port: 5432
+    }
+  : {
+      connectionString: process.env.DATABASE_URL,
+      ssl: { rejectUnauthorized: false }
+    };
+const pool = new Pool(poolConfig);
 
 // =====================
-// Serve Frontend
+// フロントエンドの設定
 // =====================
-// This tells Express to send your HTML file when someone visits the URL
+// URLアクセス時にExpressにどのファイルを起動すればいいか指定する
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'myapp.html'));
 });
@@ -47,18 +51,18 @@ app.get('/', (req, res) => {
 // =====================
 // ユーザー登録API
 // =====================
-// POST /register にリクエストが来たときに実行される
 app.post('/register', async (req, res) => {
-
   // リクエストの中からデータを取り出す
-  // 例：{ "name": "taro", "email": "...", "password": "..." }
   const { name, email, password } = req.body;
 
   try {
-    // SQLを実行してDBにデータを入れる
+    // パスワードをハッシュ化する
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
+
+    // ハッシュ化したパスワードをDBに保存する
     const result = await pool.query(
-      'INSERT INTO users (name, email, password) VALUES ($1, $2, $3) RETURNING *',
-      [name, email, password] // ← $1, $2, $3 に対応
+      'INSERT INTO users (name, email, password) VALUES ($1, $2, $3) RETURNING id',
+      [name, email, hashedPassword]
     );
 
     // 成功したら、登録したデータをそのまま返す
@@ -90,9 +94,10 @@ app.post('/login', async (req, res) => {
       return res.status(401).json({ error: 'User not found' });
     }
 
-    // パスワードチェック（今はそのまま比較）
-    if (user.password !== password) {
-      return res.status(401).json({ error: 'Wrong password' });
+    // パスワードチェック（入力されたパスワード vs DBのハッシュ）
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(401).json({ error: 'Invalid password' });
     }
 
     // 簡易トークン発行（適当でOK）
@@ -172,7 +177,6 @@ app.put('/todos/:id', async (req, res) => {
 // =====================
 app.delete('/todos/:id', async (req, res) => {
   const id = req.params.id;
-
   try {
     await pool.query(
       'DELETE FROM todos WHERE id = $1',
@@ -189,9 +193,9 @@ app.delete('/todos/:id', async (req, res) => {
 // =====================
 // サーバー起動
 // =====================
+// 環境変数があればそれを使い、なければ3000を使う
+const PORT = process.env.PORT || 3000;
 // ポートを選択してサーバーを起動する
-const PORT = process.env.PORT||3000;
-
 app.listen(PORT, () => {
   console.log(`Server running on ${PORT}`);
 });

@@ -7,62 +7,83 @@
 
   <h1>Todo App</h1>
 
+  <!--  登録画面 -->
+  <div id="registerArea">
+    <h2>Register</h2>
+    <input id="reg_name" placeholder="name">
+    <input id="reg_email" placeholder="email">
+    <input id="reg_password" placeholder="password">
+    <br> <button onclick="register()">登録</button>
+  </div>
+
   <!-- ログイン画面 -->
   <div id="loginArea">
     <h2>Login</h2>
-    <input id="email" placeholder="email">
-    <input id="password" placeholder="password">
+    <input id="login_email" placeholder="email">
+    <input type="password" id="login_password" placeholder="password">
     <button onclick="login()">ログイン</button>
+    <br> <button onclick="shiftArea('register')">または初回登録</button>
   </div>
 
   <!-- TODO画面 -->
   <div id="todoArea" style="display:none;">
     <h2>Todo</h2>
-
     <input id="title" placeholder="todo入力">
     <button onclick="addTodo()">追加</button>
-    <br> <button onclick="shiftLogin()">ログイン画面に戻る</button>
-
+    <br> <button onclick="shiftArea('login')">サインアウト</button>
     <ul id="list"></ul>
   </div>
 
   <script>
-    //const API_URL = 'http://localhost:3000';
-    //const API_URL = 'https://todoapp-ozuz.onrender.com';
+    //　今ブラウザを表示しているサイトの住所を自動で取得
     const API_URL = window.location.origin;
+
+    // 登録
+    async function register() {
+      const name = document.getElementById('reg_name').value;
+      const email = document.getElementById('reg_email').value;
+      const password = document.getElementById('reg_password').value;
+
+      const res = await fetch(`${API_URL}/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, password })
+      });
+
+      if (res.ok) {
+        // ログインへ画面切り替え
+        shiftArea('login');
+      } else {
+        const errorData = await res.json();
+        alert('Registration failed: ' + errorData.error);
+      }
+    }
 
     // ログイン
     async function login() {
-      const email = document.getElementById('email').value;
-      const password = document.getElementById('password').value;
+      const email = document.getElementById('login_email').value;
+      const password = document.getElementById('login_password').value;
 
       const res = await fetch(`${API_URL}/login`, {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({ email, password })
       });
-
       const data = await res.json();
 
       // Check if userID is valid
       if (!data.userId) {
-        console.error('No User ID returned!');
+        alert('No user ID returned!');
         return false;
       }
 
       // userId保存
       localStorage.setItem('userId', data.userId);
 
-      // 画面切り替え
-      document.getElementById('loginArea').style.display = 'none';
-      document.getElementById('todoArea').style.display = 'block';
+      // todo画面へ切り替え
+      shiftArea('todo');
 
       getTodos();
-    }
-
-    // userID取得
-    function getUserId() {
-      return localStorage.getItem('userId');
     }         
 
     // todo一覧取得
@@ -71,7 +92,7 @@
       const res = await fetch(`${API_URL}/todos?userId=${userId}`);
       const todos = await res.json();
 
-       list = document.getElementById('list');
+      list = document.getElementById('list');
       list.innerHTML = '';
 
       todos.forEach(todo => {
@@ -114,15 +135,35 @@
       getTodos();
     }
 
-    // login画面に戻る
-    function shiftLogin() {
-      document.getElementById('loginArea').style.display = 'block';
-      document.getElementById('todoArea').style.display = 'none';
+    // userID取得
+    function getUserId() {
+      return localStorage.getItem('userId');
+    }
+
+    // 画面遷移
+    function shiftArea(area) {
+      switch (area) {
+      case 'register':
+        document.getElementById('registerArea').style.display = 'block';
+        document.getElementById('loginArea').style.display = 'none';
+        document.getElementById('todoArea').style.display = 'none'; 
+        break;
+      case 'login':
+        document.getElementById('registerArea').style.display = 'none';
+        document.getElementById('loginArea').style.display = 'block';
+        document.getElementById('todoArea').style.display = 'none';
+        break;
+      case 'todo':
+        document.getElementById('registerArea').style.display = 'none';
+        document.getElementById('loginArea').style.display = 'none';
+        document.getElementById('todoArea').style.display = 'block';
+        break;
+      }
     }   
 
     // 初期表示（ログイン済みチェック
     window.onload = () => {
-      shiftLogin();
+      shiftArea('login');
     };
   </script>
 
