@@ -1,0 +1,21 @@
+# Dependency directories (ライブラリ本体は重いので含めない)
+node_modules/
+
+# OS generated files (OSが勝手に作る不要なファイル)
+.DS_Store
+Thumbs.db
+
+# Environment variables (DBのパスワードなど機密情報を含む場合は隠す)
+.env
+
+# Debug logs (エラーログなど)
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Editor directories and files (エディタ固有の設定)
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj

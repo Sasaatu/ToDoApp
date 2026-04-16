@@ -97,7 +97,7 @@ app.post('/login', async (req, res) => {
     // パスワードチェック（入力されたパスワード vs DBのハッシュ）
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      return res.status(401).json({ error: 'Invalid password' });
+      return res.status(402).json({ error: 'Invalid password' });
     }
 
     // 簡易トークン発行（適当でOK）
@@ -108,7 +108,6 @@ app.post('/login', async (req, res) => {
       token: token,
       userId: user.id
     });
-
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -157,12 +156,12 @@ app.get('/todos', async (req, res) => {
 // =====================
 app.put('/todos/:id', async (req, res) => {
   const id = req.params.id; // URLの:id
-  const { title, completed } = req.body;
+  const { completed } = req.body;
 
   try {
     const result = await pool.query(
-      'UPDATE todos SET title = $1, completed = $2 WHERE id = $3 RETURNING *',
-      [title, completed, id]
+      'UPDATE todos SET completed = $1 WHERE id = $2 RETURNING *',
+      [completed, id]
     );
 
     res.json(result.rows[0]);

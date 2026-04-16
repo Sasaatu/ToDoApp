@@ -10,19 +10,21 @@
   <!--  登録画面 -->
   <div id="registerArea">
     <h2>Register</h2>
-    <input id="reg_name" placeholder="name">
-    <input id="reg_email" placeholder="email">
-    <input id="reg_password" placeholder="password">
+    <input id="reg_name"      placeholder="name">
+    <input id="reg_email"     placeholder="email">
+    <input id="reg_password"  placeholder="password">
     <br> <button onclick="register()">登録</button>
+    <p id="reg_message" style="color: red; font-size: 0.8em; min-height: 1.2em;"></p>
   </div>
 
   <!-- ログイン画面 -->
   <div id="loginArea">
     <h2>Login</h2>
-    <input id="login_email" placeholder="email">
-    <input type="password" id="login_password" placeholder="password">
+    <input id="login_email"     placeholder="email" >
+    <input id="login_password"  placeholder="password" type="password" >
     <button onclick="login()">ログイン</button>
     <br> <button onclick="shiftArea('register')">または初回登録</button>
+    <p id="login_message" style="color: red; font-size: 0.8em; min-height: 1.2em;"></p>
   </div>
 
   <!-- TODO画面 -->
@@ -30,20 +32,42 @@
     <h2>Todo</h2>
     <input id="title" placeholder="todo入力">
     <button onclick="addTodo()">追加</button>
-    <br> <button onclick="shiftArea('login')">サインアウト</button>
+    <br> <button onclick="signOut()">サインアウト</button>
     <ul id="list"></ul>
   </div>
 
   <script>
     //　今ブラウザを表示しているサイトの住所を自動で取得
     const API_URL = window.location.origin;
+    // email形式
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
     // 登録
     async function register() {
       const name = document.getElementById('reg_name').value;
       const email = document.getElementById('reg_email').value;
       const password = document.getElementById('reg_password').value;
+      const errorParag  = document.getElementById('reg_message');
 
+      // エラーメッセージをリセット
+      errorParag.textContent = "";
+
+      // email形式チェック
+      if (!emailRegex.test(email)) {
+        errorParag.textContent = "メールアドレス形式が正しくありません。";
+        return;
+      }
+
+    　// 既存emailチェック
+      const res = await fetch(`${API_URL}/register`, {
+
+      });
+      if (res.exist) {
+        errorParag.textContent = "このメールアドレスは既に使用されています。";
+        return;
+      }
+
+      // user登録  
       const res = await fetch(`${API_URL}/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -51,6 +75,10 @@
       });
 
       if (res.ok) {
+        // UI値初期化
+        document.getElementById('reg_name').value = '';
+        document.getElementById('reg_email').value = '';
+        document.getElementById('reg_password').value = '';
         // ログインへ画面切り替え
         shiftArea('login');
       } else {
@@ -61,28 +89,44 @@
 
     // ログイン
     async function login() {
-      const email = document.getElementById('login_email').value;
-      const password = document.getElementById('login_password').value;
+      const email       = document.getElementById('login_email').value;
+      const password    = document.getElementById('login_password').value;
+      const errorParag  = document.getElementById('login_message');
+
+      // エラーメッセージをリセット
+      errorParag.textContent = "";
+      // メッセージテキスト
+      error_message = "メールアドレスまたはパスワードが正しくありません。";
+
+      // email形式チェック
+      if (!emailRegex.test(email)) {
+        errorParag.textContent = error_message;
+        return;
+      }
 
       const res = await fetch(`${API_URL}/login`, {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({ email, password })
       });
-      const data = await res.json();
-
-      // Check if userID is valid
-      if (!data.userId) {
-        alert('No user ID returned!');
-        return false;
+      
+      // 該当userなし
+      if (res.status === 401) {
+        errorParag.textContent = error_message;
+        return;
       }
 
       // userId保存
+      const data = await res.json();
       localStorage.setItem('userId', data.userId);
+
+      // UI値初期化
+      document.getElementById('login_email').value = '';
+      document.getElementById('login_password').value = '';
 
       // todo画面へ切り替え
       shiftArea('todo');
-
+      // todoリスト表示
       getTodos();
     }         
 
@@ -96,15 +140,27 @@
       list.innerHTML = '';
 
       todos.forEach(todo => {
+        // リストライン作成
         const li = document.createElement('li');
-        li.textContent = todo.title;
+
+        // 完了チェックボックス
+        const check_complete = document.createElement('input');
+        check_complete.type = 'checkbox';
+        check_complete.checked = todo.completed;
+        check_complete.onchange = () => toggleTodo(todo.id, todo.completed);  // callback
+
+        // todoテキスト
+        const span_todo = document.createElement('span');
+        span_todo.textContent = todo.title;
 
         // 削除ボタン
-        const delBtn = document.createElement('button');
-        delBtn.textContent = '削除';
-        delBtn.onclick = () => deleteTodo(todo.id);
+        const but_delete = document.createElement('button');
+        but_delete.textContent = '削除';
+        but_delete.onclick = () => deleteTodo(todo.id); // callback
 
-        li.appendChild(delBtn);
+        li.appendChild(check_complete);
+        li.appendChild(span_todo);  
+        li.appendChild(but_delete);
         list.appendChild(li);
       });
     }
@@ -123,7 +179,30 @@
       // empty todo input
       document.getElementById('title').value = '';
 
+      // todoリスト更新
       getTodos();
+
+      // 操作時間更新  
+      setLastActionTime();
+    }
+
+    // todo完了状態更新
+    async function toggleTodo(id, current_status) {
+      // 状態を反転
+      const completed = !current_status;
+
+      // DB更新
+     await fetch(`${API_URL}/todos/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ completed })
+      });
+
+      // todoリスト更新
+      getTodos();
+
+      // 操作時間更新  
+      setLastActionTime();
     }
 
     // todo削除
@@ -132,12 +211,19 @@
         method: 'DELETE'
       });
 
+      // todoリスト更新
       getTodos();
+
+      // 操作時間更新  
+      setLastActionTime();
     }
 
-    // userID取得
-    function getUserId() {
-      return localStorage.getItem('userId');
+    // ログアウト
+    function signOut() {
+      // メモリの削除
+      localStorage.removeItem('userId');
+      // ログイン画面に戻る
+      shiftArea('login');
     }
 
     // 画面遷移
@@ -159,11 +245,41 @@
         document.getElementById('todoArea').style.display = 'block';
         break;
       }
+    }
+
+    // userID取得
+    function getUserId() {
+      return localStorage.getItem('userId');
+    }
+
+    // 最新の動作時刻を記録
+    function setLastActionTime() {
+      localStorage.setItem('lastActionTime', Date.now());
     }   
 
-    // 初期表示（ログイン済みチェック
+    // 初期表示の設定
     window.onload = () => {
-      shiftArea('login');
+      // 時間経過、ログイン画面
+      // メモリがuserIdを保持、todoリストを表示
+      const expir_time = 5 * 60 * 1000;
+      const current_time = Date.now();
+      const last_time = localStorage.getItem('lastActionTime');
+      const userId = getUserId();
+      
+      if (userId && last_time) {
+        if (current_time - last_time > expir_time) {
+          alert("セッションの期限が切れています。");
+          signOut();
+        }
+        else{
+          shiftArea('todo');
+          // todoリスト表示
+          getTodos();
+        }
+      }
+      else{
+        shiftArea('login');
+      }
     };
   </script>
 
