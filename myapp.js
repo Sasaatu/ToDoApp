@@ -75,6 +75,24 @@ app.post('/register', async (req, res) => {
 });
 
 // =====================
+// emailチェックAPI
+// =====================
+app.post('/check_users', async (req, res) => {
+  const { email } = req.body;
+
+  try {
+    const result = await pool.query(
+      'SELECT EXISTS(SELECT 1 FROM users WHERE email = $1);',
+      [email]
+    );
+
+    res.json(result.rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// =====================
 // ログインAPI
 // =====================
 app.post('/login', async (req, res) => {

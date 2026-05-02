@@ -58,23 +58,28 @@
         return;
       }
 
-    　// 既存emailチェック
-      const res = await fetch(`${API_URL}/register`, {
-
+    　// email存在チェック
+      const res_check = await fetch(`${API_URL}/check_users`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
       });
-      if (res.exist) {
+      const data_check = await res_check.json();
+      // console.log('Actual Data:', data_check);
+
+      if (data_check.exists) {
         errorParag.textContent = "このメールアドレスは既に使用されています。";
         return;
       }
 
       // user登録  
-      const res = await fetch(`${API_URL}/register`, {
+      const res_reg = await fetch(`${API_URL}/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, email, password })
       });
 
-      if (res.ok) {
+      if (res_reg.ok) {
         // UI値初期化
         document.getElementById('reg_name').value = '';
         document.getElementById('reg_email').value = '';
@@ -82,7 +87,7 @@
         // ログインへ画面切り替え
         shiftArea('login');
       } else {
-        const errorData = await res.json();
+        const errorData = await res_reg.json();
         alert('Registration failed: ' + errorData.error);
       }
     }
@@ -169,6 +174,11 @@
     async function addTodo() {
       const userId = getUserId();
       const title = document.getElementById('title').value;
+
+      // 入力が空かチェック
+      if (!title.trim()) {
+        return;
+      }
 
       await fetch(`${API_URL}/todos`, {
         method: 'POST',
