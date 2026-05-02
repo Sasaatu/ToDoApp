@@ -1,7 +1,7 @@
 # Dependency directories (ライブラリ本体は重いので含めない)
 node_modules/
 temps/
-Webアプリ　ロードマップ.pages
+project_load_map.pages
 
 # OS generated files (OSが勝手に作る不要なファイル)
 .DS_Store
