@@ -1,13 +1,29 @@
 version: '3.8'
 services:
+  # Node.jsアプリの設定
+  web:
+    build: .              # 同じフォルダにあるDockerfileを使ってビルドする
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/app            # 【バインドマウント】PCの変更をリアルタイムで反映
+      - /app/node_modules # node_modulesはコンテナ内のものを使う
+    environment:
+      - DB_HOST=db        # 接続先をコンテナ名「db」にする
+      - NODE_ENV=docker  # switch 文を機能させるために追加
+    depends_on:
+      - db                # dbが起動してからwebを起動する
+
+  # データベースの設定
   db:
-    image: postgres:15
+    image: postgres:15-bullseye
+    platform: linux/amd64  # Apple Silicon Macでの動作を安定させるために追加
     restart: always
     environment:
-      - POSTGRES_USER=user
-      - POSTGRES_PASSWORD=password
-      - POSTGRES_DB=myapp_db
+      - POSTGRES_USER=sasaatu
+      - POSTGRES_PASSWORD=93618frc
+      - POSTGRES_DB=myapp
     ports:
-      - "5432:5432" # PCの5432ポートをコンテナに繋ぐ
+      - "5432:5432"
     volumes:
-      - ./postgres_data:/var/lib/postgresql/data # データをPC内に保存
+      - ./postgres_data:/var/lib/postgresql/data

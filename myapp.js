@@ -10,8 +10,8 @@ const path = require('path');
 // パスワード暗号化
 const bcrypt = require('bcrypt');
 
-// デバッグモード: local or deploy
-const mode = 'local';
+// デバッグモード
+const mode = 'docker';
 // 暗号化の強さ
 const saltRounds = 10;
 
@@ -26,18 +26,41 @@ app.use(express.json());
 // =====================
 // DB接続設定
 // =====================
-const poolConfig = (mode === 'local') 
-  ? {
+let poolConfig;
+
+switch (mode) {
+  case 'local':
+    // PCのlocalで動かす場合 
+    poolConfig = {
       user: 'sasaatu',
       host: 'localhost',
       database: 'myapp',
       password: '93618frc',
       port: 5432
-    }
-  : {
+    };
+    console.log('Running in LOCAL mode');
+    break;
+  case 'docker':
+    // 2. Dockerコンテナ（docker-compose）で動かす場合
+    poolConfig = {
+      user: 'sasaatu',
+      host: 'db',　// Docker内のサービス名
+      database: 'myapp',
+      password: '93618frc',
+      port: 5432
+    };
+    console.log('Running in DOCKER mode');
+    break;
+  case 'deploy':
+    // 3. デプロイ環境で動かす場合
+    poolConfig = {
       connectionString: process.env.DATABASE_URL,
       ssl: { rejectUnauthorized: false }
     };
+    console.log('Running in DEPLOY mode');
+    break;
+}
+
 const pool = new Pool(poolConfig);
 
 // =====================
