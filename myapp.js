@@ -51,13 +51,16 @@ switch (mode) {
     };
     console.log('Running in DOCKER mode');
     break;
-  case 'deploy':
-    // 3. デプロイ環境で動かす場合
+  case 'cloud':
+    // 3. クラウド環境で動かす場合
     poolConfig = {
-      connectionString: process.env.DATABASE_URL,
-      ssl: { rejectUnauthorized: false }
+      user: process.env.DB_USER,          // sasaatu
+      host: process.env.DB_HOST,          // RDSのエンドポイント
+      database: process.env.DB_NAME,      // myapp
+      password: process.env.DB_PASSWORD,  // 93618frc
+      port: 5432
     };
-    console.log('Running in DEPLOY mode');
+    console.log('Running in CLOUD mode');
     break;
 }
 
